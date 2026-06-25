@@ -14,7 +14,7 @@
 
 ## 🛠 Технологический стек (Июнь 2026)
 * **Оболочка (Десктоп):** Tauri v2 (Rust-ядро для безопасности и легковесного рантайма).
-* **Фронтенд:** Vue 3 (Composition API) + Vite + Tailwind CSS.
+* **Фронтенд:** React + Vite + Tailwind CSS.
 * **Бэкенд:** Python 3 + Flask + Flask-CORS + SQLAlchemy.
 * **База данных:** SQLite (хранится локально в виде одного файла).
 * **Сборка и CI/CD:** GitHub Actions + PyInstaller (упаковка Python-скриптов в бинарный sidecar внутри Tauri).
