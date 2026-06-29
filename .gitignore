@@ -216,3 +216,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Node / Frontend
+node_modules/
+dist/
+.next/
+npm-debug.log*
+
+# Rust / Tauri
+target/
+*.rs.bk
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
