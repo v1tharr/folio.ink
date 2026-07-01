@@ -23,23 +23,23 @@
 ## Как запустить локально
 
 ### Backend
-\`\`\`bash
+```bash
 cd backend
 pip install -r requirements.txt
 python app.py
-\`\`\`
+```
 Сервер на http://localhost:5000
 
 ### Тестовые данные
-\`\`\`bash
+```bash
 python seed.py
-\`\`\`
+```
 
 ### Frontend
-\`\`\`bash
+```bash
 npm install
 npm run dev
-\`\`\`
+```
 
 ## Лицензия
 
