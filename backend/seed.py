@@ -1,6 +1,6 @@
 # backend/seed.py
 
-from app import create_app
+from run import create_app
 from app.database import db
 from app.models.project import Project
 

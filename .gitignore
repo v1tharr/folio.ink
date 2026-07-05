@@ -231,3 +231,6 @@ target/
 .env
 .env.local
 .env.*.local
+
+# Database
+*.db
