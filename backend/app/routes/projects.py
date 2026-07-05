@@ -49,3 +49,4 @@ def create_project():
 
     # возвращаем созданный проект с кодом 201 (Created)
     return jsonify(new_project.to_dict()), 201
+
