@@ -35,6 +35,10 @@ python run.py
 ```bash
 python seed.py
 ```
+База данных хранится в системной папке приложения (не в папке проекта):
+- Windows: `%LOCALAPPDATA%\folio.ink\`
+- macOS: `~/Library/Application Support/folio.ink/`
+- Linux: `~/.local/share/folio.ink/`
 
 ### Frontend
 ```bash
