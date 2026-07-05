@@ -1,0 +1,28 @@
+from datetime import datetime
+from app.database import db
+
+
+class Entry(db.Model):
+    """
+    Модель записи — таблица 'entry' в SQLite.
+    Каждая запись = одно "что сделал сегодня" внутри конкретного проекта.
+    """
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+
+    date = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+
+    duration_min = db.Column(db.Integer, nullable=False)
+
+    content = db.Column(db.Text, nullable=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "project_id": self.project_id,
+            "date": self.date.isoformat() if self.date else None,
+            "duration_min": self.duration_min,
+            "content": self.content
+        }
