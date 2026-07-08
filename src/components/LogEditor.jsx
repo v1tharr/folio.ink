@@ -106,13 +106,23 @@ function XIcon(props) {
 	)
 }
 
-function formatDate(dateStr) {
+function formatDate(dateStr, locale) {
 	const d = new Date(`${dateStr}T00:00:00`)
-	return d.toLocaleDateString('en-US', {
+	return d.toLocaleDateString(locale, {
 		month: 'short',
 		day: 'numeric',
 		year: 'numeric',
 	})
+}
+
+// Форматирует дату в YYYY-MM-DD по ЛОКАЛЬНОМУ времени (не UTC),
+// чтобы избежать сдвига дня из-за часового пояса.
+function toLocalISODate(date) {
+	const d = new Date(date)
+	const year = d.getFullYear()
+	const month = String(d.getMonth() + 1).padStart(2, '0')
+	const day = String(d.getDate()).padStart(2, '0')
+	return `${year}-${month}-${day}`
 }
 
 function formatDuration(minutes) {
@@ -130,8 +140,9 @@ export default function LogEditor({
 	onUpdateEntry,
 	onDeleteEntry,
 }) {
-	const { t } = useTranslation()
-	const today = new Date().toISOString().slice(0, 10)
+	const { t, i18n } = useTranslation()
+	const dateLocale = i18n.language?.startsWith('ru') ? 'ru-RU' : 'en-US'
+	const today = toLocalISODate(new Date())
 	const [date, setDate] = useState(today)
 	const [duration, setDuration] = useState('')
 	const [tagsInput, setTagsInput] = useState('')
@@ -250,7 +261,7 @@ export default function LogEditor({
 									/>
 									<div className='flex items-center gap-2 flex-wrap mb-1.5'>
 										<span className='font-mono text-xs text-slate-500'>
-											{formatDate(entry.date)}
+											{formatDate(entry.date, dateLocale)}
 										</span>
 										<span className='font-mono text-xs px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-900'>
 											+{formatDuration(entry.durationMinutes)}

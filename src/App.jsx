@@ -19,10 +19,22 @@ const COLOR_PRESETS = [
 	'#f87171', // red
 ]
 
+// Форматирует дату в YYYY-MM-DD по ЛОКАЛЬНОМУ времени.
+// Важно: toISOString() всегда переводит в UTC, из-за чего для часовых
+// поясов впереди UTC локальная полночь "укатывается" на предыдущий день —
+// это и было причиной сдвига дней в календаре активности.
+function toLocalISODate(date) {
+	const d = new Date(date)
+	const year = d.getFullYear()
+	const month = String(d.getMonth() + 1).padStart(2, '0')
+	const day = String(d.getDate()).padStart(2, '0')
+	return `${year}-${month}-${day}`
+}
+
 function isoDaysAgo(n) {
 	const d = new Date()
 	d.setDate(d.getDate() - n)
-	return d.toISOString().slice(0, 10)
+	return toLocalISODate(d)
 }
 
 function escapeHtml(str) {
@@ -477,7 +489,10 @@ function startOfWeek(date) {
 }
 
 function StatsScreen({ projects, entries }) {
-	const { t } = useTranslation()
+	const { t, i18n } = useTranslation()
+	// Локаль для форматирования дат должна следовать за языком интерфейса,
+	// а не за локалью браузера/ОС (иначе даты всегда остаются на одном языке).
+	const dateLocale = i18n.language?.startsWith('ru') ? 'ru-RU' : 'en-US'
 
 	// Стейт смещения недель: 0 — текущая, -1 — прошлая, -2 — позапрошлая и т.д.
 	const [weekOffset, setWeekOffset] = useState(0)
@@ -534,7 +549,10 @@ function StatsScreen({ projects, entries }) {
 	})
 
 	const maxWeekdayMinutes = Math.max(...weekdayMinutes, 1)
-	const weekdayLabels = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+	// weekdayMinutes идёт Пн(0) → Вс(6), подписи должны совпадать по порядку
+	// и переводиться вместе с языком интерфейса.
+	const weekdayOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+	const weekdayLabels = weekdayOrder.map(key => t(`stats.days.${key}`))
 
 	// --- РАСЧЕТ МЕТРИК ВЕРХНЕГО РЯДА ---
 	const minutesThisWeek = selectedWeekEntries.reduce(
@@ -591,7 +609,7 @@ function StatsScreen({ projects, entries }) {
 		while (cursor <= todayTarget || generatedWeeks.length < 12) {
 			const week = []
 			for (let i = 0; i < 7; i++) {
-				const iso = cursor.toISOString().slice(0, 10)
+				const iso = toLocalISODate(cursor)
 				week.push({ date: iso, minutes: minutesByDate[iso] || 0 })
 				cursor.setDate(cursor.getDate() + 1)
 			}
@@ -621,7 +639,7 @@ function StatsScreen({ projects, entries }) {
 
 	const formatPeriod = () => {
 		const options = { month: 'short', day: 'numeric' }
-		return `${selectedWeekStart.toLocaleDateString(undefined, options)} – ${selectedWeekEnd.toLocaleDateString(undefined, options)}`
+		return `${selectedWeekStart.toLocaleDateString(dateLocale, options)} – ${selectedWeekEnd.toLocaleDateString(dateLocale, options)}`
 	}
 	return (
 		<div
@@ -831,7 +849,7 @@ function StatsScreen({ projects, entries }) {
 						<div className='flex justify-between items-center mb-4 text-[11px] font-mono text-slate-500 border-b border-slate-900 pb-2.5 select-none gap-4'>
 							<span>
 								{alignedStart
-									? new Date(alignedStart).toLocaleDateString(undefined, {
+									? new Date(alignedStart).toLocaleDateString(dateLocale, {
 											month: 'short',
 											day: 'numeric',
 										})
@@ -843,7 +861,7 @@ function StatsScreen({ projects, entries }) {
 							</span>
 							<div className='flex-1 max-w-[100px] h-[1px] bg-slate-800' />
 							<span>
-								{new Date().toLocaleDateString(undefined, {
+								{new Date().toLocaleDateString(dateLocale, {
 									month: 'short',
 									day: 'numeric',
 									year: 'numeric',
@@ -874,7 +892,7 @@ function StatsScreen({ projects, entries }) {
 												if (!day) return null
 
 												// 1. Получаем текущую дату в формате YYYY-MM-DD
-												const todayISO = new Date().toISOString().slice(0, 10)
+												const todayISO = toLocalISODate(new Date())
 
 												// 2. Находим реальный индекс сегодняшнего дня недели (где 0 - Пн, 6 - Вс)
 												const currentJsDay = new Date().getDay()
@@ -903,7 +921,7 @@ function StatsScreen({ projects, entries }) {
 												// Красивый кастомный тултип даты при наведении для прошедших/текущих дней
 												const formattedTooltipDate = new Date(
 													`${day.date}T00:00:00`,
-												).toLocaleDateString(undefined, {
+												).toLocaleDateString(dateLocale, {
 													month: 'short',
 													day: 'numeric',
 													weekday: 'short',
@@ -951,7 +969,7 @@ function StatsScreen({ projects, entries }) {
 							<h4 className='text-sm font-semibold text-slate-200 truncate'>
 								{selectedDay
 									? new Date(`${selectedDay}T00:00:00`).toLocaleDateString(
-											undefined,
+											dateLocale,
 											{
 												weekday: 'long',
 												month: 'long',
