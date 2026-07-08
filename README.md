@@ -1,51 +1,37 @@
+[![en](https://img.shields.io/badge/lang-en-red.svg)](README.md)
+[![ru](https://img.shields.io/badge/lang-ru-blue.svg)](README.ru.md)
+
 # folio.ink
 
-Локальный десктопный дневник разработчика. Трекаешь ИТ-проекты, ведёшь записи по дням, смотришь статистику потраченного времени. Данные хранятся локально в SQLite.
+A local desktop developer journal. Track projects, log daily entries, and view time spent statistics. All data is stored locally in SQLite.
 
-## Стек
+> **Status:** early MVP, active development.
 
-- **Десктоп-оболочка:** Tauri v2 (Rust)
-- **Фронтенд:** React + Vite + Tailwind CSS
-- **Бэкенд:** Python + Flask + SQLAlchemy
-- **БД:** SQLite (локальный файл)
-- **CI/CD:** GitHub Actions + PyInstaller
+## Stack
 
-## Вне скоупа MVP
+| Layer | Technology |
+|---|---|
+| Desktop shell | Tauri v2 (Rust) |
+| Frontend | React + Vite + Tailwind CSS |
+| Backend | Python + Flask + SQLAlchemy |
+| Database | SQLite (local file) |
+| CI/CD | GitHub Actions + PyInstaller |
 
-Облачная синхронизация, авторизация, кастомные темы, экспорт, мобильная версия — задачи следующих фаз.
+## Screens
 
-## Экраны
+1. **Projects** — list view: name, color, description
+2. **Entries** — timeline by date, time spent, what was done (Markdown)
+3. **Stats** — hours per project, weekly/monthly breakdown, charts
 
-1. **Проекты** — список: название, цвет, описание
-2. **Записи** — таймлайн по датам, время, что сделано (Markdown)
-3. **Статистика** — часы по проектам за неделю/месяц, график
+## Out of scope for MVP
 
-## Как запустить локально
+Cloud sync, authentication, custom themes, export, mobile version — planned for later phases, not part of the initial release.
+
+## Running locally
 
 ### Backend
+
 ```bash
 cd backend
 pip install -r requirements.txt
 python run.py
-```
-
-Сервер на http://localhost:5000
-
-### Тестовые данные
-```bash
-python seed.py
-```
-База данных хранится в системной папке приложения (не в папке проекта):
-- Windows: `%LOCALAPPDATA%\folio.ink\`
-- macOS: `~/Library/Application Support/folio.ink/`
-- Linux: `~/.local/share/folio.ink/`
-
-### Frontend
-```bash
-npm install
-npm run dev
-```
-
-## Лицензия
-
-Apache License 2.0 — см. `LICENSE`
