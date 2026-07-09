@@ -4,6 +4,7 @@ from app.routes.projects import projects_bp
 from app.models.project import Project  # noqa: F401
 from app.models.entry import Entry  # noqa: F401
 
+
 def create_test_app():
     from flask import Flask
 
@@ -16,6 +17,7 @@ def create_test_app():
     app.register_blueprint(projects_bp)
 
     return app
+
 
 @pytest.fixture
 def app():
