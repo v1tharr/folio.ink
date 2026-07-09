@@ -4,14 +4,12 @@ from app.models.project import Project
 
 class TestGetProjects:
     def test_empty_list_when_no_projects(self, client):
-        """Пустая база -> пустой список, код 200."""
         response = client.get('/api/projects')
 
         assert response.status_code == 200
         assert response.get_json() == []
 
     def test_returns_created_projects(self, client, app):
-        """Проекты, добавленные напрямую в базу, должны отдаваться через GET."""
         from app.database import db
 
         with app.app_context():
@@ -28,7 +26,6 @@ class TestGetProjects:
         assert names == {"folio.ink", "Pet-проект"}
 
     def test_response_shape(self, client, app):
-        """Проверяем, что to_dict() отдаёт все ожидаемые поля."""
         from app.database import db
 
         with app.app_context():
@@ -64,7 +61,6 @@ class TestCreateProject:
         assert data["id"] is not None
 
     def test_create_with_only_required_field(self, client):
-        """color и description необязательны, должны спокойно быть None."""
         response = client.post(
             '/api/projects',
             data=json.dumps({"name": "Минимальный проект"}),
@@ -88,7 +84,6 @@ class TestCreateProject:
         assert "error" in response.get_json()
 
     def test_empty_name_returns_400(self, client):
-        """Пустая строка тоже не должна считаться валидным именем."""
         response = client.post(
             '/api/projects',
             data=json.dumps({"name": ""}),
@@ -107,9 +102,6 @@ class TestCreateProject:
         assert response.status_code == 400
 
     def test_created_project_is_persisted(self, client, app):
-        """После POST проект должен реально появиться в базе, а не только в ответе."""
-        from app.database import db
-
         client.post(
             '/api/projects',
             data=json.dumps({"name": "Проверка сохранения"}),
@@ -121,7 +113,6 @@ class TestCreateProject:
             assert saved is not None
 
     def test_create_then_get_returns_it(self, client):
-        """POST, потом GET — созданный проект должен быть виден через список."""
         client.post(
             '/api/projects',
             data=json.dumps({"name": "Видимый проект"}),
