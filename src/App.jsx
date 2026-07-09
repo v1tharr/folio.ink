@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import './i18n'
 import SideBar from './components/SideBar'
 import ProjectCard from './components/ProjectCard'
 import LogEditor from './components/LogEditor'
+import { getProjects, createProject } from './api/client'
 
 const PROJECTS_KEY = 'devlog_projects'
 const ENTRIES_KEY = 'devlog_entries'
@@ -197,9 +198,27 @@ export default function App() {
 	const { t } = useTranslation()
 	const mock = useMemo(buildMockData, [])
 
+	// Проекты теперь приходят с бэкенда (GET /api/projects) — mock/localStorage
+	// используются только как fallback, если бэкенд недоступен, чтобы экран
+	// не был пустым офлайн.
 	const [projects, setProjects] = useState(() =>
 		loadFromStorage(PROJECTS_KEY, mock.projects),
 	)
+	const [projectsLoading, setProjectsLoading] = useState(true)
+	const [projectsError, setProjectsError] = useState(null)
+	// true только после того, как getProjects() реально отработал успешно
+	// хотя бы раз. Отдельно от projectsLoading/projectsError, потому что
+	// нужен именно "чистый" статус связи с бэком — на нём завязана видимость
+	// статистики и вкладки Stats (она строится из entries/mock, которые
+	// сами по себе не подтверждают, что бэкенд подключён).
+	const [backendConnected, setBackendConnected] = useState(false)
+	// Отдельно от projectsError: этот — для инлайн-сообщения в самой
+	// модалке создания, т.к. баннер на ProjectsScreen скрыт за оверлеем.
+	const [createProjectError, setCreateProjectError] = useState(null)
+	const [isCreatingProject, setIsCreatingProject] = useState(false)
+
+	// Записи (entries) пока полностью на localStorage — на бэкенде нет
+	// ни одного роута под Entry (см. комментарий в шапке api/client.js).
 	const [entries, setEntries] = useState(() =>
 		loadFromStorage(ENTRIES_KEY, mock.entries),
 	)
@@ -208,6 +227,38 @@ export default function App() {
 	const [activeProjectId, setActiveProjectId] = useState(null)
 	const [showNewProjectModal, setShowNewProjectModal] = useState(false)
 	const [editingProject, setEditingProject] = useState(null)
+
+	const loadProjects = useCallback(async () => {
+		setProjectsLoading(true)
+		setProjectsError(null)
+		try {
+			const data = await getProjects()
+			setProjects(data)
+			setBackendConnected(true)
+		} catch (error) {
+			// Бэкенд недоступен — оставляем то, что уже есть (кэш из
+			// localStorage или mock), но явно показываем баннер с ошибкой,
+			// чтобы не выдавать демо-данные за настоящие молча.
+			console.error('Не удалось загрузить проекты с бэкенда:', error)
+			setProjectsError(error.message)
+			setBackendConnected(false)
+		} finally {
+			setProjectsLoading(false)
+		}
+	}, [])
+
+	useEffect(() => {
+		loadProjects()
+	}, [loadProjects])
+
+	// Если пока грузим (ещё не знаем статус) или бэкенд не подключён,
+	// а пользователь как-то оказался на Stats — уводим на Projects,
+	// чтобы не показывать статистику по данным, не подтверждённым бэкендом.
+	useEffect(() => {
+		if (screen === 'stats' && !backendConnected) {
+			setScreen('projects')
+		}
+	}, [screen, backendConnected])
 
 	useEffect(() => {
 		window.localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects))
@@ -225,10 +276,32 @@ export default function App() {
 		setScreen('logs')
 	}
 
-	function handleAddProject(project) {
-		setProjects(prev => [...prev, project])
-		setShowNewProjectModal(false)
+	async function handleAddProject(project) {
+		// project.id тут — временный client-side id из NewProjectModal.
+		// Бэкенд сам назначает настоящий id (autoincrement), поэтому на
+		// сервер уходят только name/color/description.
+		setCreateProjectError(null)
+		setIsCreatingProject(true)
+		try {
+			const created = await createProject({
+				name: project.name,
+				color: project.color,
+				description: project.description,
+			})
+			setProjects(prev => [...prev, created])
+			setShowNewProjectModal(false)
+		} catch (error) {
+			console.error('Не удалось создать проект на бэкенде:', error)
+			setCreateProjectError(error.message)
+			// Модалку не закрываем и ничего не добавляем локально — иначе
+			// проект "потеряется" при следующей загрузке с сервера.
+		} finally {
+			setIsCreatingProject(false)
+		}
 	}
+	// ⚠️ PUT /api/projects/<id> на бэкенде ещё нет (см. api/client.js) —
+	// пока редактирование только локальное, изменения не долетают до сервера
+	// и потеряются при следующей загрузке через getProjects().
 	function handleUpdateProject(updatedProject) {
 		setProjects(prev =>
 			prev.map(p =>
@@ -237,6 +310,7 @@ export default function App() {
 		)
 		setEditingProject(null)
 	}
+	// ⚠️ DELETE /api/projects/<id> на бэкенде тоже ещё нет — та же оговорка.
 	function handleDeleteProject(projectId) {
 		// 1. Удаляем сам проект
 		setProjects(prev => prev.filter(p => p.id !== projectId))
@@ -271,6 +345,7 @@ export default function App() {
 				screen={screen}
 				setScreen={setScreen}
 				activeProjectId={activeProjectId}
+				backendConnected={backendConnected}
 			/>
 
 			<main className='flex-1 min-w-0 h-screen overflow-hidden'>
@@ -278,6 +353,9 @@ export default function App() {
 					<ProjectsScreen
 						projects={projects}
 						entries={entries}
+						loading={projectsLoading}
+						error={projectsError}
+						onRetry={loadProjects}
 						onSelect={handleSelectProject}
 						onDeleteProject={handleDeleteProject}
 						onEditProject={setEditingProject}
@@ -303,15 +381,28 @@ export default function App() {
 					</div>
 				)}
 
-				{screen === 'stats' && (
+				{screen === 'stats' && backendConnected && (
 					<StatsScreen projects={projects} entries={entries} />
+				)}
+
+				{screen === 'stats' && !backendConnected && (
+					<div className='h-screen flex items-center justify-center px-8'>
+						<p className='text-slate-600 text-sm text-center max-w-sm'>
+							{t('stats.backendRequired')}
+						</p>
+					</div>
 				)}
 			</main>
 
 			{showNewProjectModal && (
 				<NewProjectModal
-					onClose={() => setShowNewProjectModal(false)}
+					onClose={() => {
+						setShowNewProjectModal(false)
+						setCreateProjectError(null)
+					}}
 					onCreate={handleAddProject}
+					error={createProjectError}
+					submitting={isCreatingProject}
 				/>
 			)}
 
@@ -329,6 +420,9 @@ export default function App() {
 function ProjectsScreen({
 	projects,
 	entries,
+	loading,
+	error,
+	onRetry,
 	onSelect,
 	onDeleteProject,
 	onEditProject,
@@ -355,7 +449,27 @@ function ProjectsScreen({
 				</button>
 			</div>
 
-			{projects.length === 0 ? (
+			{error && (
+				<div className='mb-6 flex items-center justify-between gap-3 rounded-md border border-red-900/50 bg-red-950/20 px-4 py-3'>
+					<p className='text-sm text-red-400'>
+						{t('projectsScreen.loadError')}
+						<span className='block text-xs text-red-500/70 mt-0.5'>
+							{error}
+						</span>
+					</p>
+					<button
+						type='button'
+						onClick={onRetry}
+						className='shrink-0 px-3 py-1.5 rounded-md border border-red-900/60 text-red-300 text-xs font-semibold hover:bg-red-900/30 transition-colors'
+					>
+						{t('projectsScreen.retry')}
+					</button>
+				</div>
+			)}
+
+			{loading ? (
+				<p className='text-sm text-slate-500'>{t('projectsScreen.loading')}</p>
+			) : projects.length === 0 ? (
 				<div className='border border-dashed border-slate-800 rounded-lg py-16 text-center'>
 					<p className='text-slate-500 text-sm'>
 						{t('projectsScreen.emptyState')}
@@ -379,7 +493,7 @@ function ProjectsScreen({
 	)
 }
 
-function NewProjectModal({ project, onClose, onCreate }) {
+function NewProjectModal({ project, onClose, onCreate, error, submitting }) {
 	const { t } = useTranslation()
 	const isEditing = Boolean(project)
 	const [name, setName] = useState(project?.name ?? '')
@@ -388,7 +502,7 @@ function NewProjectModal({ project, onClose, onCreate }) {
 
 	function handleSubmit(e) {
 		e.preventDefault()
-		if (!name.trim()) return
+		if (!name.trim() || submitting) return
 		onCreate({
 			id: isEditing
 				? project.id
@@ -469,11 +583,22 @@ function NewProjectModal({ project, onClose, onCreate }) {
 						</button>
 						<button
 							type='submit'
-							className='flex-1 py-2.5 rounded-md bg-teal-500 hover:bg-teal-400 text-slate-950 text-sm font-semibold transition-colors'
+							disabled={submitting}
+							className='flex-1 py-2.5 rounded-md bg-teal-500 hover:bg-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 text-sm font-semibold transition-colors'
 						>
-							{isEditing ? t('modal.save') : t('modal.create')}
+							{submitting
+								? t('modal.saving')
+								: isEditing
+									? t('modal.save')
+									: t('modal.create')}
 						</button>
 					</div>
+
+					{error && (
+						<p className='text-xs text-red-400 bg-red-950/20 border border-red-900/40 rounded-md px-3 py-2'>
+							{error}
+						</p>
+					)}
 				</form>
 			</div>
 		</div>

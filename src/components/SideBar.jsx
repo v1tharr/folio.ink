@@ -60,7 +60,12 @@ function StatsIcon(props) {
 	)
 }
 
-export default function SideBar({ screen, setScreen, activeProjectId }) {
+export default function SideBar({
+	screen,
+	setScreen,
+	activeProjectId,
+	backendConnected,
+}) {
 	const { t, i18n } = useTranslation()
 
 	const navItems = [
@@ -70,8 +75,15 @@ export default function SideBar({ screen, setScreen, activeProjectId }) {
 			label: t('nav.logs'),
 			Icon: LogsIcon,
 			disabled: !activeProjectId,
+			disabledReason: t('nav.selectProjectFirst'),
 		},
-		{ key: 'stats', label: t('nav.stats'), Icon: StatsIcon },
+		{
+			key: 'stats',
+			label: t('nav.stats'),
+			Icon: StatsIcon,
+			disabled: !backendConnected,
+			disabledReason: t('nav.backendRequired'),
+		},
 	]
 
 	const currentLang = i18n.language?.startsWith('ru') ? 'ru' : 'en'
@@ -100,7 +112,7 @@ export default function SideBar({ screen, setScreen, activeProjectId }) {
 							type='button'
 							disabled={isDisabled}
 							onClick={() => !isDisabled && setScreen(item.key)}
-							title={isDisabled ? t('nav.selectProjectFirst') : undefined}
+							title={isDisabled ? item.disabledReason : undefined}
 							className={[
 								'w-full flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium transition-colors border',
 								isDisabled

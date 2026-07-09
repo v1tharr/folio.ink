@@ -19,6 +19,7 @@ const resources = {
 				logs: 'Logs',
 				stats: 'Stats',
 				selectProjectFirst: 'Select a project first',
+				backendRequired: 'Connect the backend to see stats',
 				na: 'n/a',
 			},
 			language: {
@@ -41,6 +42,9 @@ const resources = {
 				emptyState: 'No projects yet. Create one to start logging.',
 				tracked_one: '{{count}} project tracked',
 				tracked_other: '{{count}} projects tracked',
+				loading: 'Loading projects…',
+				loadError: "Couldn't reach the backend — showing cached data.",
+				retry: 'Retry',
 			},
 			logsScreen: {
 				selectFirst: 'Select a project from the Projects screen first.',
@@ -70,6 +74,8 @@ const resources = {
 			},
 			stats: {
 				header: 'Stats',
+				backendRequired:
+					'Statistics need a live backend connection to stay accurate — connect the backend to see this screen.',
 				thisWeek: 'This week',
 				allTime: 'All time',
 				totalEntries: 'Total entries',
@@ -111,6 +117,7 @@ const resources = {
 				cancel: 'Cancel',
 				create: 'Create',
 				save: 'Save changes',
+				saving: 'Saving…',
 			},
 		},
 	},
@@ -128,6 +135,7 @@ const resources = {
 				logs: 'Записи',
 				stats: 'Статистика',
 				selectProjectFirst: 'Сначала выберите проект',
+				backendRequired: 'Подключите бэкенд, чтобы увидеть статистику',
 				na: 'н/д',
 			},
 			language: {
@@ -154,6 +162,10 @@ const resources = {
 				tracked_few: '{{count}} проекта отслеживается',
 				tracked_many: '{{count}} проектов отслеживается',
 				tracked_other: '{{count}} проекта отслеживается',
+				loading: 'Загрузка проектов…',
+				loadError:
+					'Не удалось связаться с бэкендом — показаны кэшированные данные.',
+				retry: 'Повторить',
 			},
 			logsScreen: {
 				selectFirst: 'Сначала выберите проект на экране «Проекты».',
@@ -185,6 +197,8 @@ const resources = {
 			},
 			stats: {
 				header: 'Статистика',
+				backendRequired:
+					'Статистика показывается только при живом подключении к бэкенду — подключите бэкенд, чтобы увидеть этот экран.',
 				thisWeek: 'На этой неделе',
 				allTime: 'За всё время',
 				totalEntries: 'Всего записей',
@@ -228,6 +242,7 @@ const resources = {
 				cancel: 'Отмена',
 				create: 'Создать',
 				save: 'Сохранить изменения',
+				saving: 'Сохранение…',
 			},
 		},
 	},
