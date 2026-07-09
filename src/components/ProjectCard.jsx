@@ -46,11 +46,23 @@ export default function ProjectCard({
 		setIsConfirming(false)
 	}
 
+	function handleCardKeyDown(e) {
+		// Доступность: div role="button" сам не реагирует на Enter/Space,
+		// это нужно навесить руками.
+		if (isConfirming) return
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault()
+			onSelect(project.id)
+		}
+	}
+
 	return (
-		<button
-			type='button'
+		<div
+			role='button'
+			tabIndex={0}
 			onClick={() => !isConfirming && onSelect(project.id)}
-			className={`group text-left bg-slate-900 border border-slate-800 rounded-lg p-5 transition-all flex flex-col gap-3 relative ${
+			onKeyDown={handleCardKeyDown}
+			className={`group text-left bg-slate-900 border border-slate-800 rounded-lg p-5 transition-all flex flex-col gap-3 relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
 				isConfirming
 					? 'border-red-900/50 bg-red-950/10'
 					: 'hover:border-slate-700 hover:bg-slate-900/80'
@@ -161,6 +173,6 @@ export default function ProjectCard({
 					</div>
 				</div>
 			)}
-		</button>
+		</div>
 	)
 }
