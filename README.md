@@ -30,8 +30,51 @@ Cloud sync, authentication, custom themes, export, mobile version — planned fo
 ## Running locally
 
 ### Backend
-
 ```bash
 cd backend
 pip install -r requirements.txt
 python run.py
+```
+Server runs on `http://localhost:5000`
+
+### Test data (optional)
+```bash
+python seed.py
+```
+
+Database is stored in the system app data folder, not in the project folder:
+
+| OS | Path |
+|---|---|
+| Windows | `%LOCALAPPDATA%\folio.ink\` |
+| macOS | `~/Library/Application Support/folio.ink/` |
+| Linux | `~/.local/share/folio.ink/` |
+
+### Frontend
+```bash
+npm install
+npm run dev
+```
+
+## Testing
+
+### Backend
+
+Tests use `pytest` with an in-memory SQLite database, so they don't touch your local `folioink.db` file.
+
+```bash
+cd backend
+venv\Scripts\activate      # Windows
+source venv/bin/activate   # macOS/Linux
+pytest
+```
+
+Currently covers the `/api/projects` routes (GET/POST) — 10 tests. As new routes (e.g. `/api/entries`) are added, tests should be added under `backend/test/`.
+
+### Frontend
+
+Not set up yet — planned: Vitest + React Testing Library for component tests, Playwright for E2E once more screens exist.
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE).

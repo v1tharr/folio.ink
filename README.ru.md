@@ -39,7 +39,7 @@ python run.py
 
 Сервер поднимается на `http://localhost:5000`
 
-### Тестовые данные (опционально)
+### Тестовые данные
 
 ```bash
 python seed.py
@@ -52,6 +52,25 @@ python seed.py
 | Windows | `%LOCALAPPDATA%\folio.ink\` |
 | macOS | `~/Library/Application Support/folio.ink/` |
 | Linux | `~/.local/share/folio.ink/` |
+
+## Тестирование
+
+### Backend
+
+Тесты используют `pytest` с in-memory SQLite базой, поэтому они не трогают локальный файл `folioink.db`.
+
+```bash
+cd backend
+venv\Scripts\activate      # Windows
+source venv/bin/activate   # macOS/Linux
+pytest
+```
+
+Сейчас покрывает роуты `/api/projects` (GET/POST) — 10 тестов. При добавлении новых роутов (например `/api/entries`) тесты нужно добавлять в `backend/test/`.
+
+### Frontend
+
+Пока не настроено — планируется: Vitest + React Testing Library для компонентных тестов, Playwright для E2E когда появится больше экранов.
 
 ### Frontend
 
