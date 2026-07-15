@@ -2,6 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from app.database import init_db
 from app.routes.projects import projects_bp
+from app.routes.entries import entries_bp
 
 
 def create_app():
@@ -14,6 +15,7 @@ def create_app():
     CORS(app)
     init_db(app)
     app.register_blueprint(projects_bp)
+    app.register_blueprint(entries_bp)
     return app
 
 
