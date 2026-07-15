@@ -124,6 +124,7 @@ class TestCreateProject:
         names = [p['name'] for p in response.get_json()]
 
         assert "Видимый проект" in names
+        
 
 class TestUpdateProject:
     def test_404_for_unknown_project(self, client):
