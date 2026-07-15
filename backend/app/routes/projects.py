@@ -83,3 +83,4 @@ def delete_project(project_id):
     db.session.commit()
 
     return '', 204
+    
