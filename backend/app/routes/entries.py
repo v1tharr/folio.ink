@@ -3,7 +3,6 @@ from flask import Blueprint, request, jsonify
 from app.database import db
 from app.models.entry import Entry
 from app.models.project import Project
-from datetime import date
 
 entries_bp = Blueprint('entries', __name__)
 
