@@ -1,5 +1,6 @@
 import json
 from app.models.project import Project
+from datetime import date
 
 
 class TestGetProjects:
@@ -123,3 +124,82 @@ class TestCreateProject:
         names = [p['name'] for p in response.get_json()]
 
         assert "Видимый проект" in names
+
+class TestUpdateProject:
+    def test_404_for_unknown_project(self, client):
+        response = client.put(
+            '/api/projects/999',
+            data=json.dumps({"name": "новое имя"}),
+            content_type='application/json'
+        )
+        assert response.status_code == 404
+
+    def test_partial_update(self, client, app):
+        from app.database import db
+        with app.app_context():
+            project = Project(name="Старое имя", color="#111111")
+            db.session.add(project)
+            db.session.commit()
+            project_id = project.id
+
+        response = client.put(
+            f'/api/projects/{project_id}',
+            data=json.dumps({"color": "#222222"}),
+            content_type='application/json'
+        )
+        data = response.get_json()
+
+        assert response.status_code == 200
+        assert data['color'] == "#222222"
+        assert data['name'] == "Старое имя"  # не тронуто
+
+    def test_empty_name_returns_400(self, client, app):
+        from app.database import db
+        with app.app_context():
+            project = Project(name="Проект")
+            db.session.add(project)
+            db.session.commit()
+            project_id = project.id
+
+        response = client.put(
+            f'/api/projects/{project_id}',
+            data=json.dumps({"name": ""}),
+            content_type='application/json'
+        )
+        assert response.status_code == 400
+
+
+class TestDeleteProject:
+    def test_404_for_unknown_project(self, client):
+        assert client.delete('/api/projects/999').status_code == 404
+
+    def test_delete_removes_project(self, client, app):
+        from app.database import db
+        with app.app_context():
+            project = Project(name="На удаление")
+            db.session.add(project)
+            db.session.commit()
+            project_id = project.id
+
+        response = client.delete(f'/api/projects/{project_id}')
+        assert response.status_code == 204
+
+        with app.app_context():
+            assert Project.query.get(project_id) is None
+
+    def test_delete_cascades_to_entries(self, client, app):
+        from app.database import db
+        from app.models.entry import Entry
+
+        with app.app_context():
+            project = Project(name="С записями")
+            db.session.add(project)
+            db.session.commit()
+            project_id = project.id
+            db.session.add(Entry(project_id=project_id, date=date(2026, 7, 10), duration_min=30))
+            db.session.commit()
+
+        client.delete(f'/api/projects/{project_id}')
+
+        with app.app_context():
+            assert Entry.query.filter_by(project_id=project_id).count() == 0
