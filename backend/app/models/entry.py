@@ -1,5 +1,6 @@
 from datetime import datetime
 from app.database import db
+from app.models.tag import entry_tags, Tag
 
 
 class Entry(db.Model):
@@ -18,11 +19,15 @@ class Entry(db.Model):
 
     content = db.Column(db.Text, nullable=True)
 
+
+    tags = db.relationship('Tag', secondary=entry_tags, backref='entries')
+
     def to_dict(self):
         return {
             "id": self.id,
             "project_id": self.project_id,
             "date": self.date.isoformat() if self.date else None,
             "duration_min": self.duration_min,
-            "content": self.content
+            "content": self.content,
+            "tags": [tag.name for tag in self.tags]
         }
