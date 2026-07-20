@@ -1,7 +1,5 @@
 import json
 from app.models.project import Project
-from app.models.entry import Entry
-from app.models.tag import Tag
 
 
 def _create_project(app, name="Тестовый проект"):
