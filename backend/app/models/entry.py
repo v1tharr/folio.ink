@@ -1,6 +1,6 @@
 from datetime import datetime
 from app.database import db
-from app.models.tag import entry_tags, Tag
+from app.models.tag import entry_tags
 
 
 class Entry(db.Model):
