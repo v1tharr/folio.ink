@@ -19,7 +19,6 @@ class Entry(db.Model):
 
     content = db.Column(db.Text, nullable=True)
 
-
     tags = db.relationship('Tag', secondary=entry_tags, backref='entries')
 
     def to_dict(self):
