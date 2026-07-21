@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import './i18n'
 import SideBar from './components/SideBar'
 import ProjectCard from './components/ProjectCard'
-import LogEditor from './components/LogEditor'
+import ProjectNotes from './pages/ProjectNotes'
 import { getProjects, createProject } from './api/client'
 
 const PROJECTS_KEY = 'devlog_projects'
@@ -223,10 +224,31 @@ export default function App() {
 		loadFromStorage(ENTRIES_KEY, mock.entries),
 	)
 
-	const [screen, setScreen] = useState('projects')
-	const [activeProjectId, setActiveProjectId] = useState(null)
+	const navigate = useNavigate()
+	const location = useLocation()
 	const [showNewProjectModal, setShowNewProjectModal] = useState(false)
 	const [editingProject, setEditingProject] = useState(null)
+
+	// screen/activeProjectId раньше были отдельным state ("экран" как
+	// вкладка), теперь это источник правды — URL. /projects/:id -> "logs",
+	// /stats -> "stats", всё остальное -> "projects". id всегда строка
+	// (см. ProjectNotes.jsx про сравнение через String(...)).
+	const projectRouteMatch = location.pathname.match(/^\/projects\/([^/]+)/)
+	const activeProjectId = projectRouteMatch ? projectRouteMatch[1] : null
+	const screen = projectRouteMatch
+		? 'logs'
+		: location.pathname === '/stats'
+			? 'stats'
+			: 'projects'
+
+	// SideBar работает с абстракцией "экран", а не с URL напрямую (это её
+	// изначальный, не изменённый интерфейс) — здесь просто транслируем
+	// клики по вкладкам в навигацию.
+	function setScreen(key) {
+		if (key === 'projects') navigate('/')
+		else if (key === 'stats') navigate('/stats')
+		else if (key === 'logs' && activeProjectId) navigate(`/projects/${activeProjectId}`)
+	}
 
 	const loadProjects = useCallback(async () => {
 		setProjectsLoading(true)
@@ -255,10 +277,10 @@ export default function App() {
 	// а пользователь как-то оказался на Stats — уводим на Projects,
 	// чтобы не показывать статистику по данным, не подтверждённым бэкендом.
 	useEffect(() => {
-		if (screen === 'stats' && !backendConnected) {
-			setScreen('projects')
+		if (location.pathname === '/stats' && !backendConnected) {
+			navigate('/', { replace: true })
 		}
-	}, [screen, backendConnected])
+	}, [location.pathname, backendConnected, navigate])
 
 	useEffect(() => {
 		window.localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects))
@@ -268,12 +290,8 @@ export default function App() {
 		window.localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries))
 	}, [entries])
 
-	const activeProject = projects.find(p => p.id === activeProjectId) || null
-	const projectEntries = entries.filter(e => e.projectId === activeProjectId)
-
 	function handleSelectProject(id) {
-		setActiveProjectId(id)
-		setScreen('logs')
+		navigate(`/projects/${id}`)
 	}
 
 	async function handleAddProject(project) {
@@ -318,10 +336,10 @@ export default function App() {
 		// 2. Очищаем все записи, принадлежащие этому проекту
 		setEntries(prev => prev.filter(e => e.projectId !== projectId))
 
-		// 3. Если удаленный проект был активным, сбрасываем его и переключаем экран
-		if (activeProjectId === projectId) {
-			setActiveProjectId(null)
-			setScreen('projects')
+		// 3. Если удаленный проект был активным (сравниваем как строки, т.к.
+		// activeProjectId всегда приходит из URL), уводим со страницы проекта.
+		if (String(activeProjectId) === String(projectId)) {
+			navigate('/')
 		}
 	}
 
@@ -349,49 +367,55 @@ export default function App() {
 			/>
 
 			<main className='flex-1 min-w-0 h-screen overflow-hidden'>
-				{screen === 'projects' && (
-					<ProjectsScreen
-						projects={projects}
-						entries={entries}
-						loading={projectsLoading}
-						error={projectsError}
-						onRetry={loadProjects}
-						onSelect={handleSelectProject}
-						onDeleteProject={handleDeleteProject}
-						onEditProject={setEditingProject}
-						onOpenModal={() => setShowNewProjectModal(true)}
+				<Routes>
+					<Route
+						path='/'
+						element={
+							<ProjectsScreen
+								projects={projects}
+								entries={entries}
+								loading={projectsLoading}
+								error={projectsError}
+								onRetry={loadProjects}
+								onSelect={handleSelectProject}
+								onDeleteProject={handleDeleteProject}
+								onEditProject={setEditingProject}
+								onOpenModal={() => setShowNewProjectModal(true)}
+							/>
+						}
 					/>
-				)}
 
-				{screen === 'logs' && activeProject && (
-					<LogEditor
-						activeProject={activeProject}
-						projectEntries={projectEntries}
-						onSaveEntry={handleSaveEntry}
-						onUpdateEntry={handleUpdateEntry}
-						onDeleteEntry={handleDeleteEntry}
+					<Route
+						path='/projects/:id'
+						element={
+							<ProjectNotes
+								projects={projects}
+								entries={entries}
+								onSaveEntry={handleSaveEntry}
+								onUpdateEntry={handleUpdateEntry}
+								onDeleteEntry={handleDeleteEntry}
+							/>
+						}
 					/>
-				)}
 
-				{screen === 'logs' && !activeProject && (
-					<div className='h-screen flex items-center justify-center'>
-						<p className='text-slate-600 text-sm'>
-							{t('logsScreen.selectFirst')}
-						</p>
-					</div>
-				)}
+					<Route
+						path='/stats'
+						element={
+							backendConnected ? (
+								<StatsScreen projects={projects} entries={entries} />
+							) : (
+								<div className='h-screen flex items-center justify-center px-8'>
+									<p className='text-slate-600 text-sm text-center max-w-sm'>
+										{t('stats.backendRequired')}
+									</p>
+								</div>
+							)
+						}
+					/>
 
-				{screen === 'stats' && backendConnected && (
-					<StatsScreen projects={projects} entries={entries} />
-				)}
-
-				{screen === 'stats' && !backendConnected && (
-					<div className='h-screen flex items-center justify-center px-8'>
-						<p className='text-slate-600 text-sm text-center max-w-sm'>
-							{t('stats.backendRequired')}
-						</p>
-					</div>
-				)}
+					{/* Незнакомый путь -> обратно на список проектов */}
+					<Route path='*' element={<Navigate to='/' replace />} />
+				</Routes>
 			</main>
 
 			{showNewProjectModal && (
