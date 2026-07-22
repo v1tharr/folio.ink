@@ -2,8 +2,10 @@ import pytest
 from app.database import db
 from app.routes.projects import projects_bp
 from app.routes.entries import entries_bp
+from app.routes.tags import tags_bp
 from app.models.project import Project  # noqa: F401
 from app.models.entry import Entry  # noqa: F401
+from app.models.tag import Tag  # noqa: F401
 
 
 def create_test_app():
@@ -17,6 +19,7 @@ def create_test_app():
     db.init_app(app)
     app.register_blueprint(projects_bp)
     app.register_blueprint(entries_bp)
+    app.register_blueprint(tags_bp)
 
     return app
 

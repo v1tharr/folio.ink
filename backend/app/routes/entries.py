@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 from app.database import db
 from app.models.entry import Entry
 from app.models.project import Project
+from app.models.tag import Tag
 
 entries_bp = Blueprint('entries', __name__)
 
@@ -16,6 +17,31 @@ def _parse_date(date_str):
         return datetime.strptime(date_str, '%Y-%m-%d').date()
     except (ValueError, TypeError):
         return None
+
+
+def _resolve_tags(tag_names):
+    """
+    Принимает список строк ['bugfix', 'api'] и возвращает список
+    объектов Tag — существующие берёт из базы, новые создаёт.
+    Пустые строки и дубликаты игнорируются.
+    """
+    tags = []
+    seen = set()
+
+    for name in tag_names:
+        name = name.strip()
+        if not name or name in seen:
+            continue
+        seen.add(name)
+
+        tag = Tag.query.filter_by(name=name).first()
+        if tag is None:
+            tag = Tag(name=name)
+            db.session.add(tag)
+
+        tags.append(tag)
+
+    return tags
 
 
 @entries_bp.route('/api/projects/<int:project_id>/entries', methods=['GET'])
@@ -40,8 +66,9 @@ def get_entries(project_id):
 def create_entry(project_id):
     """
     Создаёт запись внутри проекта.
-    Ожидает JSON: { "date": "2026-07-10", "duration_min": 90, "content": "..." }
+    Ожидает JSON: { "date": "2026-07-10", "duration_min": 90, "content": "...", "tags": ["bugfix"] }
     'date' необязателен — если не передан, берётся сегодняшний день (UTC).
+    'tags' необязателен — если не передан, запись создаётся без тегов.
     """
     project = Project.query.get(project_id)
     if project is None:
@@ -67,11 +94,14 @@ def create_entry(project_id):
     else:
         entry_date = datetime.utcnow().date()
 
+    tags = _resolve_tags(data.get('tags', []))
+
     new_entry = Entry(
         project_id=project_id,
         date=entry_date,
         duration_min=duration_min,
-        content=data.get('content')
+        content=data.get('content'),
+        tags=tags
     )
 
     db.session.add(new_entry)
@@ -92,7 +122,7 @@ def get_entry(entry_id):
 def update_entry(entry_id):
     """
     Обновляет запись. Принимает любое подмножество полей:
-    { "date": "...", "duration_min": ..., "content": "..." }
+    { "date": "...", "duration_min": ..., "content": "...", "tags": [...] }
     Поля, которых нет в теле запроса, не трогаются.
     """
     entry = Entry.query.get(entry_id)
@@ -118,6 +148,9 @@ def update_entry(entry_id):
 
     if 'content' in data:
         entry.content = data['content']
+
+    if 'tags' in data:
+        entry.tags = _resolve_tags(data['tags'])
 
     db.session.commit()
     return jsonify(entry.to_dict())

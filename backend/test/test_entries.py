@@ -2,6 +2,7 @@ import json
 from app.models.project import Project
 from app.models.entry import Entry
 from datetime import date
+from app.models.tag import Tag
 
 
 def _create_project(app, name="Тестовый проект"):
@@ -197,3 +198,88 @@ class TestDeleteEntry:
 
         with app.app_context():
             assert Entry.query.get(entry_id) is None
+
+
+class TestEntryTags:
+    def test_create_entry_with_tags(self, client, app):
+        project_id = _create_project(app)
+        response = client.post(
+            f'/api/projects/{project_id}/entries',
+            data=json.dumps({"duration_min": 30, "tags": ["bugfix", "api"]}),
+            content_type='application/json'
+        )
+        data = response.get_json()
+
+        assert response.status_code == 201
+        assert set(data['tags']) == {"bugfix", "api"}
+
+    def test_create_entry_without_tags_gives_empty_list(self, client, app):
+        project_id = _create_project(app)
+        response = client.post(
+            f'/api/projects/{project_id}/entries',
+            data=json.dumps({"duration_min": 30}),
+            content_type='application/json'
+        )
+        data = response.get_json()
+
+        assert response.status_code == 201
+        assert data['tags'] == []
+
+    def test_reuses_existing_tag_instead_of_duplicating(self, client, app):
+        project_id = _create_project(app)
+
+        client.post(
+            f'/api/projects/{project_id}/entries',
+            data=json.dumps({"duration_min": 30, "tags": ["bugfix"]}),
+            content_type='application/json'
+        )
+        client.post(
+            f'/api/projects/{project_id}/entries',
+            data=json.dumps({"duration_min": 45, "tags": ["bugfix"]}),
+            content_type='application/json'
+        )
+
+        with app.app_context():
+            assert Tag.query.filter_by(name="bugfix").count() == 1
+
+    def test_update_entry_replaces_tags(self, client, app):
+        from app.database import db
+        project_id = _create_project(app)
+        with app.app_context():
+            entry = Entry(project_id=project_id, date=date(2026, 7, 10), duration_min=30)
+            db.session.add(entry)
+            db.session.commit()
+            entry_id = entry.id
+
+        response = client.put(
+            f'/api/entries/{entry_id}',
+            data=json.dumps({"tags": ["refactor"]}),
+            content_type='application/json'
+        )
+        data = response.get_json()
+
+        assert response.status_code == 200
+        assert data['tags'] == ["refactor"]
+
+    def test_update_entry_can_clear_tags(self, client, app):
+        from app.database import db
+        project_id = _create_project(app)
+        with app.app_context():
+            entry = Entry(project_id=project_id, date=date(2026, 7, 10), duration_min=30)
+            db.session.add(entry)
+            db.session.commit()
+            entry_id = entry.id
+
+        client.put(
+            f'/api/entries/{entry_id}',
+            data=json.dumps({"tags": ["temp"]}),
+            content_type='application/json'
+        )
+        response = client.put(
+            f'/api/entries/{entry_id}',
+            data=json.dumps({"tags": []}),
+            content_type='application/json'
+        )
+        data = response.get_json()
+
+        assert data['tags'] == []

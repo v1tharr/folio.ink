@@ -3,6 +3,7 @@ from flask_cors import CORS
 from app.database import init_db
 from app.routes.projects import projects_bp
 from app.routes.entries import entries_bp
+from app.routes.tags import tags_bp
 
 
 def create_app():
@@ -16,6 +17,7 @@ def create_app():
     init_db(app)
     app.register_blueprint(projects_bp)
     app.register_blueprint(entries_bp)
+    app.register_blueprint(tags_bp)
     return app
 
 
