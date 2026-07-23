@@ -226,6 +226,8 @@ npm-debug.log*
 # Rust / Tauri
 target/
 *.rs.bk
+src-tauri/target/
+src-tauri/gen/
 
 # Env / secrets
 .env
